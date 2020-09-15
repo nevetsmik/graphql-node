@@ -16,8 +16,22 @@
         </div>
       </section>
       <section>
-        <div class="row">
-          PetsList
+        <div v-if="isLoadingPets || isNewPetLoading">
+          <Spinner />
+        </div>
+        <div v-if="isErrorLoadingPets || hasNewPetError">
+          Error
+        </div>
+        <div v-else-if="pets" class="row">
+          <div
+            v-for="pet in pets"
+            :key="pet.id"
+            className="col-xs-12 col-md-4 col"
+          >
+            <div className="box">
+              <PetBox :pet="pet" />
+            </div>
+          </div>
         </div>
       </section>
     </div>
@@ -27,23 +41,84 @@
 <script>
 import Modal from "@/components/Modal";
 import NewPet from "@/components/NewPet";
+import PetBox from "@/components/PetBox";
+import Spinner from "@/components/Spinner";
 import { ref } from "vue";
+import { useQuery, useResult, useMutation } from "@vue/apollo-composable";
+import gql from "graphql-tag";
+
+const ALL_PETS = gql`
+  query pets {
+    pets {
+      id
+      img
+      name
+      type
+    }
+  }
+`;
+
+const CREATE_PET = gql`
+  mutation createNewPet($input: NewPetInput!) {
+    newPet(input: $input) {
+      id
+      img
+      name
+      type
+    }
+  }
+`;
 
 export default {
   components: {
     Modal,
-    NewPet
+    NewPet,
+    PetBox,
+    Spinner
   },
   setup() {
     const isNewPetModalOpen = ref(false);
     const submit = ({ type, name }) => {
-      console.log("type", type);
-      console.log("name", name);
+      createNewPet(
+        { input: { type, name } },
+        {
+          update: (cache, { data: { newPet } }) => {
+            let { pets } = cache.readQuery({ query: ALL_PETS });
+            pets = [newPet].concat(pets);
+            cache.writeQuery({
+              query: ALL_PETS,
+              data: { pets }
+            });
+          }
+        }
+      );
     };
     const closeModal = () => {
       isNewPetModalOpen.value = false;
     };
-    return { isNewPetModalOpen, submit, closeModal };
+
+    const {
+      result,
+      loading: isLoadingPets,
+      error: isErrorLoadingPets
+    } = useQuery(ALL_PETS);
+    const pets = useResult(result, [], result => result.pets);
+    const {
+      mutate: createNewPet,
+      loading: isNewPetLoading,
+      error: hasNewPetError
+    } = useMutation(CREATE_PET);
+
+    return {
+      isNewPetModalOpen,
+      submit,
+      closeModal,
+      pets,
+      isLoadingPets,
+      isErrorLoadingPets,
+      isNewPetLoading,
+      hasNewPetError
+    };
   }
 };
 </script>

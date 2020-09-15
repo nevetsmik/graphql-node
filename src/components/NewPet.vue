@@ -4,9 +4,12 @@
     <div className="box">
       <form @submit.stop.prevent="createNewPet">
         <select v-model="selectedAnimal" class="input">
-          <option v-for="animal in animals" :value="animal" :key="animal">{{
-            animal
-          }}</option></select
+          <option
+            v-for="animal in animals"
+            :value="animal.value"
+            :key="animal.value"
+            >{{ animal.label }}</option
+          ></select
         >
         <input
           v-model="animalName"
@@ -29,12 +32,16 @@
 </template>
 
 <script>
-import { ref } from "vue";
+import { ref, reactive } from "vue";
+
 export default {
   setup(props, { emit }) {
-    const animals = ref(["dog", "cat"]);
+    const animals = reactive([
+      { value: "DOG", label: "dog" },
+      { value: "CAT", label: "cat" }
+    ]);
     const animalName = ref("");
-    const selectedAnimal = ref(animals.value[0]);
+    const selectedAnimal = ref(animals[0].value);
 
     const createNewPet = () => {
       emit("submit", { type: selectedAnimal.value, name: animalName.value });

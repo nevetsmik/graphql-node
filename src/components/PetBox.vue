@@ -10,6 +10,7 @@
 
 <script>
 import { toRefs } from "vue";
+
 export default {
   props: {
     pet: {
@@ -25,7 +26,7 @@ export default {
     }
   },
   setup(props) {
-    const { id, name, type, img } = toRefs(props);
+    const { id, name, type, img } = toRefs(props.pet);
     return { id, name, type, img };
   }
 };
